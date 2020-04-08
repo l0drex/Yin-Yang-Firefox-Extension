@@ -4,7 +4,7 @@
     "name": "Yin-Yang",
     "version": "1.0",
     
-    "description": "Changes appearance betweem dark and bright depending on settings from Yin-Yang.",
+    "description": "Changes appearance between dark and bright depending on settings from Yin-Yang.",
     
     "icons": {
         "48": "assets/logo.svg",
