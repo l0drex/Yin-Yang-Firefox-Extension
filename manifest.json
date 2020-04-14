@@ -2,7 +2,7 @@
 
     "manifest_version": 2,
     "name": "Yin-Yang",
-    "version": "1.0",
+    "version": "1.1",
     
     "description": "Changes appearance between dark and bright depending on settings from Yin-Yang.",
     
