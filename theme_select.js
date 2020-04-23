@@ -11,7 +11,7 @@ function checkTime() {
     hours = date.getHours();
     minutes = date.getMinutes();
     var time = hours + ":" + minutes
-    if ((hours >= time_day[0]) && (minutes >= time_day[1]) && (hours < time_night[0]) && (minutes >= time_day[1])) {
+    if ((hours >= time_day[0]) && (minutes >= time_day[1]) && (hours < time_night[0]) && (minutes < time_night[1])) {
         console.log(time + ": Enable light theme")
         browser.management.setEnabled(theme_light, true);
     } else {
