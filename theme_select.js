@@ -71,13 +71,56 @@ function checkTime() {
     date = new Date();
     hours = date.getHours();
     minutes = date.getMinutes();
-    var time = hours + ":" + minutes
-    // if its time for light theme
-    if ((hours >= time_day[0]) && (minutes >= time_day[1]) && (hours <= time_night[0]) && (minutes < time_night[1])) {
-        setDay();
-        // else choose nigh theme
+    var time = hours + ":" + minutes;
+    // check if its time for light theme
+
+    /*  How this works:
+     *  (1a) check if dark theme comes after light theme
+     *      (1a.1a) check if current hours are bigger than daytime ones
+     *              or
+     *              if hours equal and current minute is bigger than daytime
+     *              -> its time for day theme
+     *      (1a.1b) -> its time for night theme
+     *  (1b.x) do the same but swap themes
+     */
+
+    // 1
+    if ((time_day[0] < time_night[0]) ||
+        (time_day[0] == time_night[0]) && (time_day[1] < time_night[1])) {
+
+        // 1a
+        if (((hours > time_day[0]) ||
+            ((hours == time_day[0]) && (minutes >= time_day[1]))) &&
+            ((hours < time_night[0]) ||
+            ((hours == time_night[0]) && (minutes < time_night[1])))) {
+
+            // 1a.1a
+            setDay();
+
+        } else {
+
+            // 1a.1b
+            setNight();
+
+        }
+
     } else {
-        setNight();
+
+        // 1b
+        if (((hours > time_day[0]) ||
+            ((hours == time_day[0]) && (minutes >= time_day[1]))) &&
+            ((hours < time_night[0]) ||
+            ((hours == time_night[0]) && (minutes < time_night[1])))) {
+
+            // 1b.1a
+            setNight();
+            // else choose day theme
+
+        } else {
+
+            // 1b.1b
+            setDay();
+        }
     }
 }
 
