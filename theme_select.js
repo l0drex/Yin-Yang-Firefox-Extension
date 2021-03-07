@@ -53,15 +53,15 @@ function onError(error) {
 }
 
 // Check settings from yin_yang
-console.log("Check settings.");
+console.debug("Loading settings from native application");
 browser.runtime.sendNativeMessage("yin_yang", "GetSettings").then(onResponse, onError);
 
-browser.alarms.onAlarm.addEventListener((alarm_day) => {
+browser.alarms.onAlarm.addListener((alarm_day) => {
     setTheme(theme_light);
     browser.alarms.create('alarm_night', {when: time_dark});
 });
 
-browser.alarms.onAlarm.addEventListener((alarm_night) => {
+browser.alarms.onAlarm.addListener((alarm_night) => {
     setTheme(theme_dark);
     browser.alarms.create('alarm_day', {when: time_light});
 });
