@@ -1,138 +1,67 @@
-/*
-On startup, connect to the "yin_yang" app.
-*/
-var schedule = false;
-var Time_schedule = new Date();
-var time_day = new Object(), time_night = new Object();
-var theme_light = "firefox-compact-light@mozilla.org",
-    theme_dark = "firefox-compact-dark@mozilla.org";
+let time_light, time_dark;
+let theme_light, theme_dark;
 
-// every time the theme has changed
+function setTheme(theme) {
+    browser.management.setEnabled(theme, true);
+    console.log(`Switched to theme ${theme}`);
+}
 
-function setTime(time) {
-    // set time to next schedule
-    Time_schedule.setHours(time[0]);
-    Time_schedule.setMinutes(time[1]);
-    if (Time_schedule.getTime() < Date.now()) {
-        Time_schedule.setDate(Time_schedule.getDate() + 1)
+function shouldBeDark() {
+    // get current time
+    let time_current = new Date();
+
+    // increment day if alarms have passed
+    if (time_current > time_light) time_dark.day++;
+    if (time_current > time_dark) time_dark.day++;
+
+    if (time_light < time_dark) {
+        return !(time_light <= time_current < time_dark);
+    } else {
+        return time_dark <= time_current < time_light;
     }
-    console.log("Time for next schedule: " + Time_schedule.toLocaleString());
 }
 
-function setDay() {
-    console.log("Enable light theme");
-    // apply light theme
-    browser.management.setEnabled(theme_light, true);
-    // set alarm for night mode
-    setTime(time_night);
-    browser.alarms.create('alarm_night', {when: Time_schedule.getTime()});
-}
-
-function setNight() {
-    // apply dark theme
-    console.log("Enable dark theme");
-    browser.management.setEnabled(theme_dark, true);
-    // set alarm for day mode
-    setTime(time_day);
-    browser.alarms.create('alarm_day', {when: Time_schedule.getTime()});
-}
-
-// only on startup
 function onResponse(response) {
     // if the theme should change automatically
     if (response.schedule) {
         // apply settings
-        schedule = response.schedule;
-        time_day = response.time_day;
-        time_night = response.time_night;
+        time_light = new Date()
+        time_light.setHours(response.time_day[0], response.time_day[1])
         theme_light = response.theme_light;
+        console.log(theme_light + " will be activated at " + time_light.toTimeString())
+
+        time_dark = new Date()
+        time_dark.setHours(response.time_night[0], response.time_night[1])
         theme_dark = response.theme_dark;
-        console.log("Time Day: " + time_day[0] + ":" + time_day[1]);
-        console.log("Time Night: " + time_night[0] + ":" + time_night[1]);
-        console.log("Theme Light: " + theme_light);
-        console.log("Theme Dark: " + theme_dark);
-        // decide which theme to choose
-        checkTime();
-        // if the theme is static
+        console.log(theme_dark + " will be activated at " + time_dark.toTimeString())
+
+        if (shouldBeDark()) {
+            setTheme(theme_dark);
+        } else {
+            setTheme(theme_light);
+        }
+        browser.alarms.create('alarm_day', {when: time_light})
+        browser.alarms.create('alarm_night', {when: time_dark})
     } else {
-        // apply the active theme
-        var theme_active = response.theme_active;
-        browser.management.setEnabled(theme_active, true);
-        console.log(`Switched to theme ${theme_active}`);
+        // apply the theme
+        setTheme(response.theme_active);
     }
 }
 
 function onError(error) {
-    console.log(`Error: ${error}`);
-}
-
-function checkTime() {
-    // get current time
-    date = new Date();
-    hours = date.getHours();
-    minutes = date.getMinutes();
-    var time = hours + ":" + minutes;
-    // check if its time for light theme
-
-    /*  How this works:
-     *  (1a) check if dark theme comes after light theme
-     *      (1a.1a) check if current hours are bigger than daytime ones
-     *              or
-     *              if hours equal and current minute is bigger than daytime
-     *              -> its time for day theme
-     *      (1a.1b) -> its time for night theme
-     *  (1b.x) do the same but swap themes
-     */
-
-    // 1
-    if ((time_day[0] < time_night[0]) ||
-        (time_day[0] == time_night[0]) && (time_day[1] < time_night[1])) {
-
-        // 1a
-        if (((hours > time_day[0]) ||
-            ((hours == time_day[0]) && (minutes >= time_day[1]))) &&
-            ((hours < time_night[0]) ||
-            ((hours == time_night[0]) && (minutes < time_night[1])))) {
-
-            // 1a.1a
-            setDay();
-
-        } else {
-
-            // 1a.1b
-            setNight();
-
-        }
-
-    } else {
-
-        // 1b
-        if (((hours > time_day[0]) ||
-            ((hours == time_day[0]) && (minutes >= time_day[1]))) &&
-            ((hours < time_night[0]) ||
-            ((hours == time_night[0]) && (minutes < time_night[1])))) {
-
-            // 1b.1a
-            setNight();
-            // else choose day theme
-
-        } else {
-
-            // 1b.1b
-            setDay();
-        }
-    }
+    console.error(`Error: ${error}`);
 }
 
 // Check settings from yin_yang
 console.log("Check settings.");
-var sending = browser.runtime.sendNativeMessage("yin_yang", "GetSettings");
-sending.then(onResponse, onError);
+browser.runtime.sendNativeMessage("yin_yang", "GetSettings").then(onResponse, onError);
 
-browser.alarms.onAlarm.addListener((alarm_day) => {
-    setDay();
+browser.alarms.onAlarm.addEventListener((alarm_day) => {
+    setTheme(theme_light);
+    browser.alarms.create('alarm_night', {when: time_dark});
 });
 
-browser.alarms.onAlarm.addListener((alarm_night) => {
-    setNight();
-})
+browser.alarms.onAlarm.addEventListener((alarm_night) => {
+    setTheme(theme_dark);
+    browser.alarms.create('alarm_day', {when: time_light});
+});
