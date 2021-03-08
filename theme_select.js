@@ -32,6 +32,9 @@ function changeTheme() {
     let dark_mode = shouldBeDark()
     setTheme(dark_mode)
 
+    // increase time for next alarm by one day
+    times[dark_mode ? 1 : 0] += 60 * 60 * 24;
+
     // create a new alarm
     browser.alarms.clearAll();
     const when = times[dark_mode ? 1 : 0];
@@ -69,9 +72,7 @@ function onResponse(response) {
     // add listener for alarms
     browser.alarms.onAlarm.addListener((alarm) => {
         if (alarm.name === "auto_dark_mode") {
-            console.debug('alarm ' + alarm.name + ' went off');
-            // increase time for next alarm by one day
-            times[dark_mode ? 1 : 0] += 60 * 60 * 24;
+            console.log('alarm ' + alarm.name + ' went off');
             changeTheme();
         }
     });
