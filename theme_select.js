@@ -1,14 +1,17 @@
-var themes = [0, 1];
-var times = [0, 1];
+let themes = [0, 1];
+let times = [0, 1];
 
-function setTheme(dark_mode) {
-    console.log((dark_mode ? 'Enabling' : 'Disabling')+ ' dark mode');
-    let theme = themes[dark_mode ? 1 : 0];
+function setTheme(dark) {
+    let theme = themes[dark ? 1 : 0];
 
-    if (!browser.management.get(theme).enabled) {
-        browser.management.setEnabled(theme, true);
-        console.debug(`Switched to theme ${theme}`);
-    }
+    browser.management.get(theme).then((theme) => {
+        if (!theme.enabled) {
+            browser.management.setEnabled(theme, true);
+            console.debug(`Switched to theme ${theme}`);
+        }
+    }, () => {
+        console.error('Theme is not installed.')
+    })
 }
 
 function shouldBeDark(time_light, time_dark) {
@@ -27,17 +30,11 @@ function shouldBeDark(time_light, time_dark) {
 
 function changeTheme() {
     let dark_mode = shouldBeDark()
-    // set appropriate theme
     setTheme(dark_mode)
-    // increase time for next alarm by on day
-    console.debug('old time: ' + times[dark_mode ? 1 : 0]);
-    times[dark_mode ? 1 : 0] += 60 * 60 * 24;
-    console.debug('new time: ' + times[dark_mode ? 1 : 0]);
 
-    // create an alarm
+    // create a new alarm
     browser.alarms.clearAll();
     const when = times[dark_mode ? 1 : 0];
-    console.debug('Creating alarm at ' + when);
     browser.alarms.create("auto_dark_mode", {
         when
     });
@@ -72,6 +69,9 @@ function onResponse(response) {
     // add listener for alarms
     browser.alarms.onAlarm.addListener((alarm) => {
         if (alarm.name === "auto_dark_mode") {
+            console.debug('alarm ' + alarm.name + ' went off');
+            // increase time for next alarm by one day
+            times[dark_mode ? 1 : 0] += 60 * 60 * 24;
             changeTheme();
         }
     });
