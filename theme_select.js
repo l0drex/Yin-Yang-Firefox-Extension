@@ -1,67 +1,90 @@
-let time_light, time_dark;
-let theme_light, theme_dark;
+var themes = [0, 1];
+var times = [0, 1];
 
-function setTheme(theme) {
-    browser.management.setEnabled(theme, true);
-    console.log(`Switched to theme ${theme}`);
+function setTheme(dark_mode) {
+    console.log((dark_mode ? 'Enabling' : 'Disabling')+ ' dark mode');
+    let theme;
+    if (dark_mode) {
+        theme = themes[1];
+    } else {
+        theme = themes[0];
+    }
+
+    if (!browser.management.get(theme).enabled) {
+        browser.management.setEnabled(theme, true);
+        console.debug(`Switched to theme ${theme}`);
+    }
 }
 
-function shouldBeDark() {
+function shouldBeDark(time_light, time_dark) {
     // get current time
-    let time_current = new Date();
+    let time_current = Date.now();
 
-    // increment day if alarms have passed
-    if (time_current > time_light) time_dark.day++;
-    if (time_current > time_dark) time_dark.day++;
-
+    // if light is activated first
     if (time_light < time_dark) {
+        // true, if current time is not in light period
         return !(time_light <= time_current < time_dark);
     } else {
+        // true, if current time is in dark period
         return time_dark <= time_current < time_light;
     }
 }
 
 function onResponse(response) {
-    // if the theme should change automatically
-    if (response.schedule) {
-        // apply settings
-        time_light = new Date()
-        time_light.setHours(response.time_day[0], response.time_day[1])
-        theme_light = response.theme_light;
-        console.log(theme_light + " will be activated at " + time_light.toTimeString())
-
-        time_dark = new Date()
-        time_dark.setHours(response.time_night[0], response.time_night[1])
-        theme_dark = response.theme_dark;
-        console.log(theme_dark + " will be activated at " + time_dark.toTimeString())
-
-        if (shouldBeDark()) {
-            setTheme(theme_dark);
-        } else {
-            setTheme(theme_light);
-        }
-        browser.alarms.create('alarm_day', {when: time_light})
-        browser.alarms.create('alarm_night', {when: time_dark})
-    } else {
-        // apply the theme
-        setTheme(response.theme_active);
+    if (!response.enabled) {
+        console.log("Yin Yang is disabled")
+        return;
     }
+
+    themes = response.themes;
+    setTheme(response.dark_mode);
+
+    if (!response.scheduled) {
+        console.log("Automatic theme switching is disabled");
+        return;
+    }
+
+    // if the theme should change automatically
+    times = response.times;
+    for (let i of [0, 1]) { // 1: dark_mode
+        // create an alarm
+        const when = times[i];
+        const periodInMinutes = 60 * 24;
+
+        console.debug('Creating alarm at ' + when + ' for every ' + periodInMinutes);
+        browser.alarms.create("alarm_" + i, {
+            when,
+            periodInMinutes
+        });
+
+        // check that it was successful
+        browser.alarms.get("alarm_" + i).then((alarm) => {
+            console.debug(themes[i] + " will be activated at " + alarm.scheduledTime);
+        }, () => {
+            console.error("Alarm was not created correctly.");
+        });
+    }
+
+    // add listener
+    browser.alarms.onAlarm.addListener((alarm) => {
+        console.debug("Alarm: " + alarm.name);
+        switch (alarm.name) {
+            case "alarm_0":
+                setTheme(false);
+                break;
+            case "alarm_1":
+                setTheme(true);
+                break;
+            default:
+                break;
+        }
+    });
 }
 
 function onError(error) {
     console.error(`Error: ${error}`);
 }
 
-// Check settings from yin_yang
+// Ask for settings from yin_yang
 console.debug("Loading settings from native application");
 browser.runtime.sendNativeMessage("yin_yang", "GetSettings").then(onResponse, onError);
-
-browser.alarms.onAlarm.addListener((alarm_day) => {
-    setTheme(theme_light);
-    browser.alarms.create('alarm_night', {when: time_dark});
-});
-
-browser.alarms.onAlarm.addListener((alarm_night) => {
-    setTheme(theme_dark);
-    browser.alarms.create('alarm_day', {when: time_light});
-});
