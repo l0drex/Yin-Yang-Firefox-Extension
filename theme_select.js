@@ -64,8 +64,9 @@ function applyConfig(response) {
     }
 
     // if the theme should change automatically:
-    times = response.times;
-    console.debug(new Date(times[0]));
+    for (let i of [0, 1]) {
+        times[i] = response.times[i]*1000;
+    }
     setTheme(shouldBeDark())
     update_alarm();
 }
@@ -78,7 +79,6 @@ browser.runtime.sendNativeMessage("yin_yang", "Firefox").then(
 );
 
 // add listener for alarms
-/*
 browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === "auto_dark_mode") {
         console.debug('alarm ' + alarm.name + ' went off');
@@ -91,4 +91,3 @@ browser.alarms.onAlarm.addListener((alarm) => {
         update_alarm();
     }
 });
-*/
