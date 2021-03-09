@@ -9,7 +9,7 @@ function setTheme(dark) {
             console.info(`Switching to theme ${theme.name}`);
             browser.management.setEnabled(theme.id, true);
         } else {
-            console.warn(theme_id, ' is already enabled!')
+            console.warn(theme.name, ' is already enabled!')
         }
     }, () => {
         console.error('Theme is not installed.')
@@ -71,9 +71,27 @@ function applyConfig(response) {
     update_alarm();
 }
 
+function getMessage() {
+    let message = {
+    name: "Firefox",
+    themes: []
+    }
+
+    browser.management.getAll().then(extensions => {
+        for (let extension of extensions) {
+            if (extension.type === 'theme') {
+                message.themes.push(extension);
+            }
+        }
+    });
+
+    return message;
+}
+
+
 // Ask for settings from yin_yang
 console.debug("Loading settings from native application");
-browser.runtime.sendNativeMessage("yin_yang", "Firefox").then(
+browser.runtime.sendNativeMessage("yin_yang", getMessage()).then(
     applyConfig,
     () => console.error(`Error: ${error}`)
 );
