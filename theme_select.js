@@ -16,25 +16,17 @@ function setTheme(dark) {
     })
 }
 
-function shouldBeDark(time_light, time_dark) {
-    let time_current = Date.now();
+function shouldBeDark() {
+    let time_dark = times[1];
 
-    // if light is activated first
-    if (time_light < time_dark) {
-        // true, if current time is not in light period
-        return !(time_light <= time_current < time_dark);
-    } else {
-        // true, if current time is in dark period
-        return time_dark <= time_current < time_light;
-    }
+    return Date.now() >= time_dark;
 }
 
-function update_alarm() {
-    let dark_mode = shouldBeDark();
+function update_alarm(dark_mode) {
     // create a new alarm to switch to other theme
     browser.alarms.clearAll();
-    console.debug("Creating new alarm for theme " + themes[(!dark_mode) ? 1 : 0]);
     const when = times[(!dark_mode) ? 1 : 0];
+    console.debug("Creating new alarm for theme", themes[(!dark_mode) ? 1 : 0], 'for', new Date(when).toLocaleString());
     console.assert(when > Date.now(),
         "The scheduled alarm time", new Date(when).toLocaleString(), "is in the past!");
     browser.alarms.create("auto_dark_mode", {
@@ -56,10 +48,10 @@ function applyConfig(response) {
     }
 
     themes = response.themes;
+    setTheme(response.dark_mode);
 
     if (!response.scheduled) {
         console.log("Automatic theme switching is disabled");
-        setTheme(response.dark_mode);
         return;
     }
 
@@ -67,8 +59,9 @@ function applyConfig(response) {
     for (let i of [0, 1]) {
         times[i] = response.times[i]*1000;
     }
-    setTheme(shouldBeDark())
-    update_alarm();
+    console.assert(shouldBeDark() === response.dark_mode,
+        "Expected dark mode and active dark mode differ!");
+    update_alarm(response.dark_mode);
 }
 
 function getMessage() {
@@ -104,8 +97,7 @@ browser.alarms.onAlarm.addListener((alarm) => {
         setTheme(dark_mode);
 
         // increase time for next alarm by one day
-        times[dark_mode ? 1 : 0] += 60 * 60 * 24;
-
-        update_alarm();
+        times[dark_mode ? 1 : 0] += 60 * 60 * 24 * 1000;
+        update_alarm(shouldBeDark());
     }
 });
