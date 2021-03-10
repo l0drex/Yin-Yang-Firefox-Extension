@@ -42,24 +42,25 @@ function update_alarm(dark_mode) {
 }
 
 function applyConfig(response) {
-    if (!response.enabled) {
-        console.log("Yin Yang is disabled")
-        return;
+    themes = [response.theme_light, response.theme_dark];
+    response_dark_mode = response.theme_active === response.theme_dark;
+
+    if (response_dark_mode) {
+        setTheme(true);
+    } else {
+        setTheme(false);
     }
 
-    themes = response.themes;
-    setTheme(response.dark_mode);
-
-    if (!response.scheduled) {
+    if (!response.schedule) {
         console.log("Automatic theme switching is disabled");
         return;
     }
 
     // if the theme should change automatically:
-    for (let i of [0, 1]) {
-        times[i] = response.times[i]*1000;
-    }
-    console.assert(shouldBeDark() === response.dark_mode,
+    times[0] = response.time_day * 1000;
+    times[1] = response.time_night * 1000;
+
+    console.assert(shouldBeDark() === response_dark_mode,
         "Expected dark mode and active dark mode differ!");
     update_alarm(response.dark_mode);
 }
