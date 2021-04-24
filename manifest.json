@@ -2,9 +2,9 @@
 
     "manifest_version": 2,
     "name": "Yin-Yang",
-    "version": "1.1.1",
+    "version": "1.2.0",
     
-    "description": "Changes appearance between dark and bright depending on settings from Yin-Yang.",
+    "description": "Changes automatically to a theme as set in the application Yin Yang",
     
     "icons": {
         "48": "assets/logo.svg",
