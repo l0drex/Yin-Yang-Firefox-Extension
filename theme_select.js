@@ -69,7 +69,7 @@ function applyConfig(response) {
 console.debug("Loading settings from native application");
 browser.runtime.sendNativeMessage("yin_yang", 'firefox').then(
     applyConfig,
-    () => console.error(`Error: ${error}`)
+    (error) => console.error(`Error: ${error}`)
 );
 
 // add listener for alarms
