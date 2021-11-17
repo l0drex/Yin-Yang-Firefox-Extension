@@ -25,8 +25,11 @@ function shouldBeDark() {
 function update_alarm(dark_mode) {
     // create a new alarm to switch to other theme
     browser.alarms.clearAll();
-    const when = times[(!dark_mode) ? 1 : 0];
-    console.debug("Creating new alarm for theme", themes[(!dark_mode) ? 1 : 0], 'for', new Date(when).toLocaleString());
+
+    const when = times[dark_mode ? 0 : 1];
+    console.debug("Creating new alarm for theme", themes[dark_mode ? 1 : 0],
+                  'for', new Date(when).toLocaleString());
+
     console.assert(when > Date.now(),
         "The scheduled alarm time", new Date(when).toLocaleString(), "is in the past!");
     browser.alarms.create("auto_dark_mode", {
@@ -42,27 +45,23 @@ function update_alarm(dark_mode) {
 }
 
 function applyConfig(response) {
-    themes = [response.theme_light, response.theme_dark];
-    response_dark_mode = response.theme_active === response.theme_dark;
+    if (!response.enabled) return;
+    
+    themes = response.themes
 
-    if (response_dark_mode) {
-        setTheme(true);
-    } else {
-        setTheme(false);
-    }
+    setTheme(response.dark_mode);   
 
-    if (!response.schedule) {
+    if (!response.scheduled) {
         console.log("Automatic theme switching is disabled");
         return;
     }
 
     // if the theme should change automatically:
-    times[0] = response.time_day * 1000;
-    times[1] = response.time_night * 1000;
+    times = [response.times[0] * 1000, response.times[1] * 1000]
 
-    console.assert(shouldBeDark() === response_dark_mode,
+    console.assert(shouldBeDark() === response.dark_mode,
         "Expected dark mode and active dark mode differ!");
-    update_alarm(response.dark_mode);
+    update_alarm(!response.dark_mode);
 }
 
 
